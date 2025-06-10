@@ -8,37 +8,50 @@ configFile := A_ScriptDir . "\config.ini"
 global macroActivo := false
 global autoClickerActivo := false
 global webhookURL := ""
-global modoCaminata := "Cuadrado"  ; Valor por defecto
-global version := "v3.5"
+global modoCaminata := "ZigZag"
+global version := "v3.5 Premium"
 global tiempoActivo := 0
 global ciclosCompletados := 0
 global ultimaEjecucion := "Nunca"
 global pasoCuadrado := 0
 global pasoZigZag := 0
-global pasoTriangulo := 0
-global pasoEstrella := 0
-global pasoEspiral := 0
 global pasoXSnake := 0
-global autoClickDelay := 50 ; Valor por defecto autoclicker en ms
-global size := 100 ; Tamaño base para patrones de movimiento
-global TCLRKey := "A" ; Tecla para movimiento izquierda/derecha
-global TCFBKey := "W" ; Tecla para movimiento adelante/atrás
-global AFCLRKey := "D" ; Tecla alternativa izquierda/derecha
-global AFCFBKey := "S" ; Tecla alternativa adelante/atrás
+global autoClickDelay := 50
+global size := 100
+global TCLRKey := "A"
+global TCFBKey := "W" 
+global AFCLRKey := "D"
+global AFCFBKey := "S"
 
-; --- Colores actualizados ---
-colorFondo := "0x660000"           ; Rojo oscuro pero menos intenso que 0x330000 (fondo)
-colorPrincipal := "0xF08080"       ; Rojo claro suave (botones principales)
-colorSecundario := "0xCD5C5C"      ; Rojo medio claro (botones secundarios)
-colorExito := "0x27AE60"           ; Verde éxito
-colorTexto := "0xECF0F1"           ; Blanco suave
-colorTextoOscuro := "0x95A5A6"     ; Gris claro
-colorAdvertencia := "0xE67E22"     ; Naranja
+; Configuración de Slots
+global slotActivo := [false, false, false, false, false, false, false]
+global slotIntervalo := [1000, 1000, 1000, 1000, 1000, 1000, 1000]
+global slotTecla := ["1", "2", "3", "4", "5", "6", "7"]
+global lastSlotPress := [0, 0, 0, 0, 0, 0, 0]
+
+; --- Colores ---
+colorFondo := "0x2C3E50"
+colorPrincipal := "0xE74C3C" 
+colorSecundario := "0x3498DB"
+colorExito := "0x27AE60"
+colorTexto := "0xECF0F1"
+colorTextoOscuro := "0x95A5A6"
+colorAdvertencia := "0xE67E22"
 
 ; --- Leer Configuración ---
 IniRead, webhookURL, %configFile%, Settings, Webhook, 
 IniRead, modoCaminata, %configFile%, Settings, ModoCaminata, ZigZag
 IniRead, autoClickDelay, %configFile%, Settings, AutoClickDelay, 50
+
+; Leer configuración de Slots
+Loop, 7 {
+    IniRead, slotActivo%A_Index%, %configFile%, Slots, Slot%A_Index%Activo, 0
+    IniRead, slotIntervalo%A_Index%, %configFile%, Slots, Slot%A_Index%Intervalo, 1000
+    IniRead, slotTecla%A_Index%, %configFile%, Slots, Slot%A_Index%Tecla, %A_Index%
+    slotActivo[A_Index] := (slotActivo%A_Index% = "1") ? true : false
+    slotIntervalo[A_Index] := slotIntervalo%A_Index%
+    slotTecla[A_Index] := slotTecla%A_Index%
+}
 
 ; --- Crear Interfaz Gráfica ---
 Gui, Color, %colorFondo%
@@ -49,9 +62,9 @@ Gui, Add, Picture, x10 y10 w40 h40, images\bee_icon.png
 Gui, Add, Text, x60 y15 w300 h30 c%colorTexto%, NeptuneMacro %version%
 Gui, Add, Text, x370 y15 w110 h20 c%colorTextoOscuro% Right, by Im_Troller
 
-; Tabs con tema limpio
+; Tabs
 Gui, Font, s10 c%colorTexto%
-Gui, Add, Tab2, x10 y55 w490 h255 vMainTab -Border, Macro|Settings|Stats|Info
+Gui, Add, Tab2, x10 y55 w490 h255 vMainTab -Border, Macro|Slots|Settings|Stats|Info
 
 ; --- Pestaña Macro ---
 Gui, Tab, Macro
@@ -63,11 +76,31 @@ Gui, Add, GroupBox, x20 y140 w400 h90, Movement Mode
 Gui, Add, DropDownList, vModoCaminataSel x40 y165 w360 Choose1 BackgroundFFF c000000, Standing|Cuadrado|ZigZag|XSnake
 GuiControl, ChooseString, ModoCaminataSel, %modoCaminata%
 
-; AutoClick Delay input
 Gui, Add, Text, x20 y240 w180 h20 c%colorTexto%, AutoClick Delay (ms):
 Gui, Add, Edit, vAutoClickDelayInput x200 y238 w80 h26 c000000 BackgroundFFF8DC -E0x200 Border, %autoClickDelay%
 
 Gui, Add, StatusBar,, Status: Waiting...
+
+; --- Pestaña Slots ---
+Gui, Tab, Slots
+Gui, Add, Picture, x20 y80 w48 h48, images\slots_icon.png
+Gui, Add, Text, x80 y80 w100 h24 c%colorTexto%, Slot Configuration
+
+yPos := 110
+Loop, 7 {
+    checkedState := slotActivo[A_Index] ? "Checked" : ""
+    Gui, Add, CheckBox, vSlot%A_Index%Activo x40 y%yPos% w30 h26 %checkedState% c%colorTexto%, 
+    
+    Gui, Add, Text, x75 y%yPos%+5 w40 h20 c%colorTexto%, Slot %A_Index%:
+    Gui, Add, Edit, vSlot%A_Index%Tecla x120 y%yPos% w40 h26 c000000 BackgroundFFF8DC -E0x200 Border, % slotTecla[A_Index]
+    Gui, Add, Text, x170 y%yPos%+5 w30 h20 c%colorTexto%, every
+    Gui, Add, Edit, vSlot%A_Index%Intervalo x210 y%yPos% w60 h26 c000000 BackgroundFFF8DC -E0x200 Border, % slotIntervalo[A_Index]
+    Gui, Add, Text, x280 y%yPos%+5 w20 h20 c%colorTexto%, ms
+    
+    yPos += 35
+}
+
+Gui, Add, Button, gGuardarSlots x180 y260 w140 h36 Background%colorExito% c%colorTexto%, 💾 Save Slots
 
 ; --- Pestaña Settings ---
 Gui, Tab, Settings
@@ -97,18 +130,19 @@ Gui, Add, Text, x20 y90 w460 h40 Center, Created by Im_Troller
 Gui, Font, s10 c%colorTextoOscuro%
 Gui, Add, Text, x20 y140 w460 h80 Center, © 2023 Bee Macro Premium - All Rights Reserved.`nAll rights reserved.
 
-; --- Botón salir en la esquina ---
+; --- Botón salir ---
 Gui, Add, Button, gSalir x430 y315 w70 h28 Background666666 c%colorTexto%, ✖ Exit
 
-; Set window icon and title
+; Configuración de ventana
 Menu, Tray, Icon, images\bee_icon.ico
 Gui, Show, w510 h350 Center, NeptuneMacro
 SB_SetText("Status: Ready | Mode: " . modoCaminata)
 
 SetTimer, ActualizarTiempo, 1000
+SetTimer, ProcesarSlots, 100
 return
 
-; --- Funciones Principales ---
+; --- Funciones ---
 
 GuardarConfiguracion:
     Gui, Submit, NoHide
@@ -116,12 +150,44 @@ GuardarConfiguracion:
     modoCaminata := ModoCaminataSel
     autoClickDelay := AutoClickDelayInput
     if (autoClickDelay < 1)
-        autoClickDelay := 50  ; mínimo 1ms
+        autoClickDelay := 50
     IniWrite, %webhookURL%, %configFile%, Settings, Webhook
     IniWrite, %modoCaminata%, %configFile%, Settings, ModoCaminata
     IniWrite, %autoClickDelay%, %configFile%, Settings, AutoClickDelay
     SB_SetText("Status: Settings saved | Mode: " . modoCaminata . " | Click Delay: " . autoClickDelay . "ms")
     MostrarNotificacion("✅ Settings saved", "Changes saved successfully.")
+return
+
+GuardarSlots:
+    Gui, Submit, NoHide
+    Loop, 7 {
+        slotActivo[A_Index] := Slot%A_Index%Activo
+        slotIntervalo[A_Index] := Slot%A_Index%Intervalo
+        slotTecla[A_Index] := Slot%A_Index%Tecla
+        
+        IniWrite, % slotActivo[A_Index] ? 1 : 0, %configFile%, Slots, Slot%A_Index%Activo
+        IniWrite, % slotIntervalo[A_Index], %configFile%, Slots, Slot%A_Index%Intervalo
+        IniWrite, % slotTecla[A_Index], %configFile%, Slots, Slot%A_Index%Tecla
+    }
+    SB_SetText("Status: Slots configuration saved")
+    MostrarNotificacion("✅ Slots Saved", "Slot configuration saved successfully.")
+return
+
+ProcesarSlots:
+    if (!macroActivo)
+        return
+    
+    currentTime := A_TickCount
+    
+    Loop, 7 {
+        if (slotActivo[A_Index]) {
+            if ((currentTime - lastSlotPress[A_Index]) >= slotIntervalo[A_Index]) {
+                keyToPress := slotTecla[A_Index]
+                Send, {%keyToPress%}
+                lastSlotPress[A_Index] := currentTime
+            }
+        }
+    }
 return
 
 ProbarWebhook:
@@ -181,7 +247,6 @@ if (!macroActivo)
 Send, {W up}{A up}{S up}{D up}
 
 if (modoCaminata = "Standing") {
-    ; No movement, just click
     Click
     Sleep, 1000
     ciclosCompletados++
@@ -221,7 +286,6 @@ else if (modoCaminata = "Cuadrado") {
 }
 else if (modoCaminata = "ZigZag") {
     if (pasoZigZag = 0) {
-        ; Move forward 3 times
         Send, {W down}
         Sleep, 500
         Send, {W up}
@@ -239,14 +303,12 @@ else if (modoCaminata = "ZigZag") {
         pasoZigZag := 1
     }
     else if (pasoZigZag = 1) {
-        ; Move right
         Send, {D down}
         Sleep, 500
         Send, {D up}
         pasoZigZag := 2
     }
     else if (pasoZigZag = 2) {
-        ; Move backward 3 times
         Send, {S down}
         Sleep, 500
         Send, {S up}
@@ -264,7 +326,6 @@ else if (modoCaminata = "ZigZag") {
         pasoZigZag := 3
     }
     else if (pasoZigZag = 3) {
-        ; Move right to return to starting position
         Send, {D down}
         Sleep, 500
         Send, {D up}
@@ -274,8 +335,7 @@ else if (modoCaminata = "ZigZag") {
     GuiControl,, TxtCiclos, Cycles Completed: %ciclosCompletados%
 }
 else if (modoCaminata = "XSnake") {
-    reps := 1 ; Puedes ajustar para más repeticiones
-
+    reps := 1
     loop, %reps% {
         Send, {%TCLRKey% down}
         Walk(4 * size)
@@ -319,13 +379,10 @@ else if (modoCaminata = "XSnake") {
         Walk(Sqrt((4 * size) ** 2 + (4 * size) ** 2))
         Send, {%TCFBKey% up}{%AFCLRKey% up}
     }
-
     ciclosCompletados++
     GuiControl,, TxtCiclos, Cycles Completed: %ciclosCompletados%
 }
 return
-
-; --- Auto Clicker ---
 
 IniciarAutoClicker:
     if (!autoClickerActivo) {
@@ -352,16 +409,8 @@ if (autoClickerActivo and macroActivo) {
 return
 
 ; --- Hotkeys ---
-
-F1::
-    Gosub, IniciarMacro
-return
-
-F2::
-    Gosub, DetenerMacro
-return
-
-; --- Temporizador para actualizar tiempo activo ---
+F1::Gosub, IniciarMacro
+F2::Gosub, DetenerMacro
 
 ActualizarTiempo:
 if (macroActivo) {
@@ -413,6 +462,7 @@ Salir:
     if (macroActivo) {
         SetTimer, Movimiento, Off
         SetTimer, AutoClickerTimer, Off
+        SetTimer, ProcesarSlots, Off
         EnviarWebhookEmbed("Macro Closed", "📴 Macro was closed while active.", 10038562)
     }
     ExitApp
