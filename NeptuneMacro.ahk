@@ -128,7 +128,7 @@ Gui, Tab, Info
 Gui, Font, s12 c%colorTexto% Bold
 Gui, Add, Text, x20 y90 w460 h40 Center, Created by Im_Troller
 Gui, Font, s10 c%colorTextoOscuro%
-Gui, Add, Text, x20 y140 w460 h80 Center, © 2023 Bee Macro Premium - All Rights Reserved.`nAll rights reserved.
+Gui, Add, Text, x20 y140 w460 h80 Center, © 2025 Night Team - All Rights Reserved.`nAll rights reserved.
 
 ; --- Botón salir ---
 Gui, Add, Button, gSalir x430 y315 w70 h28 Background666666 c%colorTexto%, ✖ Exit
